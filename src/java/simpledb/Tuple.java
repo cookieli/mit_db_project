@@ -1,8 +1,8 @@
 package simpledb;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Iterator;
+import simpledb.Field;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -12,6 +12,9 @@ import java.util.Iterator;
 public class Tuple implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    public TupleDesc schema;
+    public Field[] values;
+    public RecordId rid;
 
     /**
      * Create a new tuple with the specified schema (type).
@@ -22,14 +25,30 @@ public class Tuple implements Serializable {
      */
     public Tuple(TupleDesc td) {
         // some code goes here
+    	schema = td;
+    	values = new Field[td.numFields()];
+    	rid = null;
     }
-
+    
+    public boolean equals(Object o) {
+    	if(o == null)
+    		return false;
+    	if (o == this)
+    		return true;
+    	if (!(o instanceof Tuple))
+    		return false;
+    	Tuple t = (Tuple) o;
+    	if(rid.equals(t.getRecordId()) && t.getTupleDesc().equals(schema)) {
+    		return true;
+    	}
+    	return false;
+    }
     /**
      * @return The TupleDesc representing the schema of this tuple.
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return schema;
     }
 
     /**
@@ -38,7 +57,7 @@ public class Tuple implements Serializable {
      */
     public RecordId getRecordId() {
         // some code goes here
-        return null;
+        return rid;
     }
 
     /**
@@ -49,8 +68,12 @@ public class Tuple implements Serializable {
      */
     public void setRecordId(RecordId rid) {
         // some code goes here
+    	this.rid = rid;
     }
-
+    
+    public int numOfFields() {
+    	return schema.numFields();
+    }
     /**
      * Change the value of the ith field of this tuple.
      *
@@ -59,8 +82,14 @@ public class Tuple implements Serializable {
      * @param f
      *            new value for the field.
      */
+    
+    
     public void setField(int i, Field f) {
-        // some code goes here
+    	// some code goes here
+    	if(i < 0 || i > numOfFields()) {
+    		throw new IllegalArgumentException("i is out of fields");
+    	}
+    	values[i] = f;
     }
 
     /**
@@ -71,7 +100,10 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // some code goes here
-        return null;
+    	if(i < 0 || i > numOfFields()) {
+    		throw new IllegalArgumentException("i is out of fields");
+    	}
+        return values[i];
     }
 
     /**
@@ -84,7 +116,14 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+    	String ret = "";
+    	ret += schema.toString();
+    	ret += "\n";
+    	for(int i =0; i < numOfFields(); i++) {
+    		ret += values[i].toString()+"\t";
+    	}
+    	return ret;
+        //throw new UnsupportedOperationException("Implement this");
     }
 
     /**
@@ -94,7 +133,23 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields()
     {
         // some code goes here
-        return null;
+        return new FieldIterator<>();
+    }
+    
+    class FieldIterator<Field> implements Iterator<Field>{
+    	int i = 0;
+		@Override
+		public boolean hasNext() {
+			// TODO Auto-generated method stub
+			return i < values.length;
+		}
+
+		@Override
+		public Field next() {
+			// TODO Auto-generated method stub
+			return   (Field) values[i++];
+		}
+    	
     }
 
     /**
@@ -103,5 +158,7 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         // some code goes here
+    	schema = td;
+    	values = new Field[td.numFields()];
     }
 }

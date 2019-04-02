@@ -14,13 +14,16 @@ import java.io.*;
 public class HeapPage implements Page {
 
     final HeapPageId pid;
-    final TupleDesc td;
+    final TupleDesc td;//one table has one TupleDesc
     final byte header[];
     final Tuple tuples[];
     final int numSlots;
-
+    
+    boolean dirty;
+    TransactionId dirtyTid;
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
+    //private boolean slotIsUsed[];
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -42,6 +45,7 @@ public class HeapPage implements Page {
         this.pid = id;
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
         this.numSlots = getNumTuples();
+        //this.slotIsUsed = new boolean[this.numSlots];   	int
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 
         // allocate and read the header slots of this page
@@ -52,8 +56,11 @@ public class HeapPage implements Page {
         tuples = new Tuple[numSlots];
         try{
             // allocate and read the actual records of this page
-            for (int i=0; i<tuples.length; i++)
+            for (int i=0; i<numSlots; i++) {
                 tuples[i] = readNextTuple(dis,i);
+                //System.out.println(tuples[i]);
+                //slotIsUsed[i] = true;
+            }
         }catch(NoSuchElementException e){
             e.printStackTrace();
         }
@@ -67,10 +74,14 @@ public class HeapPage implements Page {
     */
     private int getNumTuples() {        
         // some code goes here
-        return 0;
+    	
+        return Math.floorDiv(Database.getBufferPool().getPageSize()*8, td.getSize() * 8 + 1);
 
     }
-
+    
+    public boolean isPageEmpty() {
+    	return this.numSlots == getNumEmptySlots();
+    }
     /**
      * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
      * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
@@ -78,7 +89,11 @@ public class HeapPage implements Page {
     private int getHeaderSize() {        
         
         // some code goes here
-        return 0;
+    	//System.out.println("numSlots:: "+ numSlots / 8);
+    	/*if(numSlots == 337) {
+    		System.out.println("numSlots::" + (double)numSlots/8.0);
+    	}*/
+        return (int)Math.ceil((double)numSlots / 8.0);
                  
     }
     
@@ -112,7 +127,8 @@ public class HeapPage implements Page {
      */
     public HeapPageId getId() {
     // some code goes here
-    throw new UnsupportedOperationException("implement this");
+    	return pid;
+    //throw new UnsupportedOperationException("implement this");
     }
 
     /**
@@ -245,6 +261,16 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+    	int i = t.getRecordId().getTupleNumber();
+    	if(!isSlotUsed(i)) 
+    		throw new DbException("this slot is empty");
+    	else if(!tuples[i].equals(t)) {
+    		throw new DbException("this tuple don't exist");
+    	}
+    	else {
+    		tuples[i] = null;
+    		markSlotUsed(i, false);
+    	}
     }
 
     /**
@@ -257,6 +283,24 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+    	if(getNumEmptySlots() == 0) {
+    		throw new DbException("the page is full");
+    	} else if(!t.getTupleDesc().equals(td)) {
+    		throw new DbException("this tuple doesn't match page");
+    	} else {
+    		int i = getFirstEmptySlot();
+    		RecordId ri = new RecordId(pid, i);
+    		t.setRecordId(ri);
+    		tuples[i] = t;
+    		markSlotUsed(i, true);
+    	}
+    }
+    
+    public int getFirstEmptySlot() {
+    	for(int i = 0; i < numSlots; i++) {
+    		if(!isSlotUsed(i))  return i;
+    	}
+    	return -1;
     }
 
     /**
@@ -266,6 +310,9 @@ public class HeapPage implements Page {
     public void markDirty(boolean dirty, TransactionId tid) {
         // some code goes here
 	// not necessary for lab1
+    	this.dirty = dirty;
+    	this.dirtyTid = tid;
+    	
     }
 
     /**
@@ -274,6 +321,8 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // some code goes here
 	// Not necessary for lab1
+    	if(dirty) 
+    		return dirtyTid;
         return null;      
     }
 
@@ -282,7 +331,13 @@ public class HeapPage implements Page {
      */
     public int getNumEmptySlots() {
         // some code goes here
-        return 0;
+    	int usedSlot = 0;
+    	for(int i = 0; i < numSlots; i++) {
+    		if(isSlotUsed(i)) {
+    			usedSlot += 1;
+    		}
+    	}
+        return numSlots - usedSlot;
     }
 
     /**
@@ -290,7 +345,15 @@ public class HeapPage implements Page {
      */
     public boolean isSlotUsed(int i) {
         // some code goes here
-        return false;
+    	//first get which byte it belongs to;
+    	int byte_order = (int)Math.floor((double)i/8.0);
+    	int bit_order = i % 8;
+    	byte fillter =  (byte) ((byte)1 << bit_order);
+    	
+    	if(byte_order >= header.length) { 
+    		throw new IllegalArgumentException("byte order is wrong");
+    	}
+        return (header[byte_order] & fillter)  != 0;
     }
 
     /**
@@ -299,6 +362,16 @@ public class HeapPage implements Page {
     private void markSlotUsed(int i, boolean value) {
         // some code goes here
         // not necessary for lab1
+    	int byte_order = (int)Math.floor((double)i/8.0);
+    	int bit_order = i % 8;
+    	byte fillter =  (byte) ((byte)1 << bit_order);
+    	byte bits = header[byte_order];
+    	if(value) {
+    		bits |= fillter;
+    	} else {
+    		bits &= ~fillter;
+    	}
+    	header[byte_order] = bits;
     }
 
     /**
@@ -307,7 +380,24 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        return null;
+        return new tupleIterator();
+    }
+    
+    public  class tupleIterator<Tuple> implements Iterator<Tuple>{
+    	
+    	private int i = 0;
+		@Override
+		public boolean hasNext() {
+			// TODO Auto-generated method stub
+			return i < numSlots && tuples[i] != null;
+		}
+
+		@Override
+		public Tuple next() {
+			// TODO Auto-generated method stub
+			return (Tuple) tuples[i++];
+		}
+    	
     }
 
 }

@@ -42,6 +42,12 @@ public class JoinTest extends SimpleDbTestBase {
 
         // Begin the join
         TransactionId tid = new TransactionId();
+//        System.out.println("table1");
+//        DbFileIterator it = table1.iterator(tid);
+//        while(it.hasNext()) {
+//        	System.out.println(it.next());
+//        }
+        
         SeqScan ss1 = new SeqScan(tid, table1.getId(), "");
         SeqScan ss2 = new SeqScan(tid, table2.getId(), "");
         JoinPredicate p = new JoinPredicate(0, Predicate.Op.EQUALS, 0);
@@ -54,18 +60,19 @@ public class JoinTest extends SimpleDbTestBase {
         Database.getBufferPool().transactionComplete(tid);
     }
 
-    @Test public void testSingleMatch()
+     @Test public void testSingleMatch()
             throws IOException, DbException, TransactionAbortedException {
         validateJoin(1, 1, 1, 1);
     }
 
-    @Test public void testNoMatch()
+     @Test public void testNoMatch()
             throws IOException, DbException, TransactionAbortedException {
         validateJoin(1, 2, 2, 10);
     }
 
     @Test public void testMultipleMatch()
             throws IOException, DbException, TransactionAbortedException {
+    	//System.out.println("testMultipleMatch");
         validateJoin(1, 3, 1, 3);
     }
 

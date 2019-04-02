@@ -22,7 +22,7 @@ public class HeapFileEncoder {
    * @see HeapPage
    * @see HeapFile
    * @param tuples the tuples - a list of tuples, each represented by a list of integers that are
-   *        the field values for that tuple.
+   *        the field values for that tuple.//the tuple only has integer field
    * @param outFile The output file to write data to
    * @param npagebytes The number of bytes per page in the output file
    * @param numFields the number of fields in each input tuple
