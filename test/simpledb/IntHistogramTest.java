@@ -12,7 +12,7 @@ public class IntHistogramTest {
 	 * (or, at least, reasonably small space; O(log(n)) might still work if
 	 * your constants are good).
 	 */
-	@Test public void orderOfGrowthTest() {
+	 @Test public void orderOfGrowthTest() {
 		// Don't bother with a timeout on this test.
 		// Printing debugging statements takes >> time than some inefficient algorithms.
 		IntHistogram h = new IntHistogram(10000, 0, 100);
@@ -40,7 +40,7 @@ public class IntHistogramTest {
 	/**
 	 * Test with a minimum and a maximum that are both negative numbers.
 	 */
-	@Test public void negativeRangeTest() {
+	 @Test public void negativeRangeTest() {
 		IntHistogram h = new IntHistogram(10, -60, -10);
 		
 		// All of the values here are negative.
@@ -49,7 +49,6 @@ public class IntHistogramTest {
 			h.addValue(c);
 			h.estimateSelectivity(Op.EQUALS, c);
 		}
-		
 		// Even with just 10 bins and 50 values,
 		// the selectivity for this particular value should be at most 0.2.
 		Assert.assertTrue(h.estimateSelectivity(Op.EQUALS, -33) < 0.3);
@@ -63,7 +62,7 @@ public class IntHistogramTest {
 	/**
 	 * Make sure that equality binning does something reasonable.
 	 */
-	@Test public void opEqualsTest() {
+	 @Test public void opEqualsTest() {
 		IntHistogram h = new IntHistogram(10, 1, 10);
 		
 		// Set some values
@@ -80,7 +79,7 @@ public class IntHistogramTest {
 	/**
 	 * Make sure that GREATER_THAN binning does something reasonable.
 	 */
-	@Test public void opGreaterThanTest() {
+	 @Test public void opGreaterThanTest() {
 		IntHistogram h = new IntHistogram(10, 1, 10);
 		
 		// Set some values
@@ -90,6 +89,8 @@ public class IntHistogramTest {
 		h.addValue(1);
 		h.addValue(10);
 		
+		//System.out.println(h.estimateSelectivity(Op.GREATER_THAN, 4));
+		//System.out.println(h);
 		// Be conservative in case of alternate implementations
 		Assert.assertTrue(h.estimateSelectivity(Op.GREATER_THAN, -1) > 0.999);
 		Assert.assertTrue(h.estimateSelectivity(Op.GREATER_THAN, 2) > 0.6);
@@ -100,7 +101,7 @@ public class IntHistogramTest {
 	/**
 	 * Make sure that LESS_THAN binning does something reasonable.
 	 */
-	@Test public void opLessThanTest() {
+	 @Test public void opLessThanTest() {
 		IntHistogram h = new IntHistogram(10, 1, 10);
 		
 		// Set some values
@@ -141,7 +142,7 @@ public class IntHistogramTest {
 	/**
 	 * Make sure that LESS_THAN_OR_EQ binning does something reasonable.
 	 */
-	@Test public void opLessThanOrEqualsTest() {
+	 @Test public void opLessThanOrEqualsTest() {
 		IntHistogram h = new IntHistogram(10, 1, 10);
 		
 		// Set some values
@@ -162,7 +163,7 @@ public class IntHistogramTest {
 	/**
 	 * Make sure that equality binning does something reasonable.
 	 */
-	@Test public void opNotEqualsTest() {
+	 @Test public void opNotEqualsTest() {
 		IntHistogram h = new IntHistogram(10, 1, 10);
 		
 		// Set some values
